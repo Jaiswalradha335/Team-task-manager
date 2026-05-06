@@ -15,27 +15,28 @@ function init() {
     if (token) {
         showPage('app-section');
         updateUserInfo();
-        fetchTasks();
-        fetchProjects();
-        fetchUsers();
+        fetchData();
         showTab('dashboard');
     } else {
         showPage('auth-section');
     }
 
-
     // Setup Event Listeners
     setupFormListeners();
 }
 
+async function fetchData() {
+    await Promise.all([
+        fetchProjects(),
+        fetchTasks(),
+        fetchUsers()
+    ]);
+    renderDashboard();
+}
+
 function setupFormListeners() {
     // Login
-    const loginForm = document.getElementById('form-login');
-    // Remove old listeners to prevent duplicates if init is called again
-    const newLoginForm = loginForm.cloneNode(true);
-    loginForm.parentNode.replaceChild(newLoginForm, loginForm);
-
-    newLoginForm.addEventListener('submit', async (e) => {
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
@@ -56,16 +57,12 @@ function setupFormListeners() {
                 showToast(data.message || 'Login failed', 'error');
             }
         } catch (err) {
-            showToast('Network error - Is the server running?', 'error');
+            showToast('Network error', 'error');
         }
     });
 
     // Signup
-    const signupForm = document.getElementById('form-signup');
-    const newSignupForm = signupForm.cloneNode(true);
-    signupForm.parentNode.replaceChild(newSignupForm, signupForm);
-
-    newSignupForm.addEventListener('submit', async (e) => {
+    document.getElementById('form-signup').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('signup-name').value;
         const email = document.getElementById('signup-email').value;
@@ -87,20 +84,16 @@ function setupFormListeners() {
                 showToast(data.message || 'Signup failed', 'error');
             }
         } catch (err) {
-            showToast('Network error - Is the server running?', 'error');
+            showToast('Network error', 'error');
         }
     });
 
     // Create Project
-    const projectForm = document.getElementById('form-project');
-    const newProjectForm = projectForm.cloneNode(true);
-    projectForm.parentNode.replaceChild(newProjectForm, projectForm);
-
-    newProjectForm.addEventListener('submit', async (e) => {
+    document.getElementById('form-project').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('proj-name').value;
         const description = document.getElementById('proj-desc').value;
-        const members = document.getElementById('proj-members').value.split(',').map(s => s.trim());
+        const members = document.getElementById('proj-members').value;
 
         try {
             const res = await fetch(`${API}/projects`, {
@@ -113,10 +106,10 @@ function setupFormListeners() {
             });
             
             if (res.ok) {
-                showToast('Project created successfully!', 'success');
+                showToast('Project launched!', 'success');
                 closeModal('modal-project');
                 e.target.reset();
-                fetchProjects(); // Refresh project list
+                fetchData();
             } else {
                 const data = await res.json();
                 showToast(data.message || 'Failed to create project', 'error');
@@ -127,15 +120,11 @@ function setupFormListeners() {
     });
 
     // Create Task
-    const taskForm = document.getElementById('form-task');
-    const newTaskForm = taskForm.cloneNode(true);
-    taskForm.parentNode.replaceChild(newTaskForm, taskForm);
-
-    newTaskForm.addEventListener('submit', async (e) => {
+    document.getElementById('form-task').addEventListener('submit', async (e) => {
         e.preventDefault();
         const title = document.getElementById('task-title-input').value;
         const dueDate = document.getElementById('task-date').value;
-        const projectId = document.getElementById('task-project').value;
+        const projectId = document.getElementById('task-project-select').value;
         const assignedTo = document.getElementById('task-assignee').value;
 
         try {
@@ -152,7 +141,7 @@ function setupFormListeners() {
                 showToast('Task created!', 'success');
                 closeModal('modal-task');
                 e.target.reset();
-                fetchTasks(); // Refresh list
+                fetchData();
             } else {
                 const data = await res.json();
                 showToast(data.message || 'Failed to create task', 'error');
@@ -170,16 +159,10 @@ async function fetchProjects() {
         const res = await fetch(`${API}/projects`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const projects = await res.json();
-        
-        if (res.ok) {
-            allProjects = projects;
-            renderProjects(projects);
-        } else {
-            showToast('Failed to fetch projects', 'error');
-        }
+        allProjects = await res.json();
+        populateProjectDropdowns();
     } catch (err) {
-        showToast('Network error fetching projects', 'error');
+        showToast('Error fetching projects', 'error');
     }
 }
 
@@ -188,17 +171,9 @@ async function fetchTasks() {
         const res = await fetch(`${API}/tasks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const tasks = await res.json();
-        
-        if (res.ok) {
-            allTasks = tasks;
-            renderTasks(tasks);
-            if (allProjects.length > 0) renderProjects(allProjects); // Re-render to update actual project progress
-        } else {
-            showToast('Failed to fetch tasks', 'error');
-        }
+        allTasks = await res.json();
     } catch (err) {
-        showToast('Network error fetching tasks', 'error');
+        showToast('Error fetching tasks', 'error');
     }
 }
 
@@ -208,22 +183,198 @@ async function fetchUsers() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const users = await res.json();
-        
-        if (res.ok) {
-            renderUsers(users);
-        } else {
-            showToast('Failed to fetch team members', 'error');
-        }
+        renderTeamList(users);
     } catch (err) {
-        showToast('Network error fetching team members', 'error');
+        showToast('Error fetching users', 'error');
     }
 }
 
-window.updateTaskStatus = async function(taskId, currentStatus) {
-    const statusCycle = ['Pending', 'In Progress', 'Completed'];
-    const nextIndex = (statusCycle.indexOf(currentStatus) + 1) % statusCycle.length;
-    const nextStatus = statusCycle[nextIndex];
+function populateProjectDropdowns() {
+    const selects = [document.getElementById('task-project-select'), document.getElementById('task-filter-project')];
+    selects.forEach(select => {
+        if (!select) return;
+        const currentValue = select.value;
+        select.innerHTML = select.id === 'task-filter-project' ? '<option value="all">All Projects</option>' : '';
+        allProjects.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            select.appendChild(opt);
+        });
+        select.value = currentValue || select.firstChild?.value;
+    });
+}
 
+// --- Rendering Logic ---
+
+function renderDashboard() {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+
+    // Calculate Stats
+    const stats = {
+        projects: allProjects.length,
+        tasks: allTasks.length,
+        completed: allTasks.filter(t => t.status === 'Completed').length,
+        progress: allTasks.filter(t => t.status === 'In Progress').length,
+        pending: allTasks.filter(t => t.status === 'Pending').length,
+        overdue: allTasks.filter(t => {
+            const d = new Date(t.dueDate);
+            d.setHours(0,0,0,0);
+            return d <= now && t.status !== 'Completed';
+        }).length
+    };
+
+    // Update UI Stats
+    document.getElementById('stat-projects').textContent = stats.projects;
+    document.getElementById('stat-proj-sub').textContent = `${stats.projects} ongoing`;
+    document.getElementById('stat-tasks').textContent = stats.tasks;
+    document.getElementById('stat-task-sub').textContent = `${stats.completed} completed`;
+    document.getElementById('stat-progress').textContent = stats.progress;
+    document.getElementById('stat-overdue').textContent = stats.overdue;
+
+    // Render Recent Activity
+    const activityList = document.getElementById('recent-activity-list');
+    activityList.innerHTML = '';
+    const recentTasks = [...allTasks].sort((a,b) => b.id - a.id).slice(0, 5);
+    
+    recentTasks.forEach(task => {
+        const project = allProjects.find(p => p.id == task.projectId);
+        const dueDate = new Date(task.dueDate);
+        dueDate.setHours(0,0,0,0);
+        const isOverdue = dueDate <= now && task.status !== 'Completed';
+        
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+            <div class="activity-info">
+                <h5>${task.title}</h5>
+                <p>${project ? project.name : 'Unknown Project'} • ${task.assignedTo || 'Unassigned'}</p>
+            </div>
+            <span class="badge ${isOverdue ? 'badge-overdue' : 'badge-pending'}">${isOverdue ? 'overdue' : task.status.toLowerCase()}</span>
+        `;
+        activityList.appendChild(item);
+    });
+
+    // Update Chart
+    const total = stats.tasks || 1; // avoid divide by zero
+    const pComp = (stats.completed / total) * 100;
+    const pProg = (stats.progress / total) * 100;
+    const pPend = (stats.pending / total) * 100;
+    const pOver = (stats.overdue / total) * 100;
+
+    document.getElementById('chart-total-count').textContent = stats.tasks;
+    document.getElementById('status-donut').style.background = `conic-gradient(
+        var(--success) 0% ${pComp}%,
+        var(--primary) ${pComp}% ${pComp + pProg}%,
+        var(--warning) ${pComp + pProg}% ${pComp + pProg + pPend}%,
+        var(--danger) ${pComp + pProg + pPend}% 100%
+    )`;
+
+    renderProjectsPage();
+    renderTasksPage();
+}
+
+function renderProjectsPage() {
+    const list = document.getElementById('page-projects-list');
+    list.innerHTML = '';
+    
+    allProjects.forEach(project => {
+        const pTasks = allTasks.filter(t => t.projectId == project.id);
+        const completed = pTasks.filter(t => t.status === 'Completed').length;
+        const progress = pTasks.length > 0 ? Math.round((completed / pTasks.length) * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+                <h3 style="font-size: 1.125rem;">${project.name}</h3>
+                <span class="badge badge-success">${progress}%</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; min-height: 3em;">${project.description || 'No description provided.'}</p>
+            <div style="margin-bottom: 1.5rem;">
+                <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; background: var(--primary); width: ${progress}%;"></div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="avatar-group" style="display:flex;">
+                    <img src="https://i.pravatar.cc/150?u=${project.id}1" style="width:32px; height:32px; border-radius:50%; border:2px solid white;">
+                    <img src="https://i.pravatar.cc/150?u=${project.id}2" style="width:32px; height:32px; border-radius:50%; border:2px solid white; margin-left:-8px;">
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">${completed}/${pTasks.length} Tasks</p>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function renderTasksPage(filterStatus = null) {
+    const columns = {
+        'Pending': document.getElementById('page-tasks-pending'),
+        'In Progress': document.getElementById('page-tasks-progress'),
+        'Completed': document.getElementById('page-tasks-completed')
+    };
+
+    Object.values(columns).forEach(col => col.innerHTML = '');
+
+    allTasks.forEach(task => {
+        if (filterStatus && task.status !== filterStatus && filterStatus !== 'Overdue') return;
+        
+        // Handle Overdue special filter
+        if (filterStatus === 'Overdue') {
+            const d = new Date(task.dueDate);
+            d.setHours(0,0,0,0);
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            if (!(d <= now && task.status !== 'Completed')) return;
+        }
+
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.style.flexDirection = 'column';
+        item.style.alignItems = 'flex-start';
+        item.style.gap = '0.75rem';
+        item.style.cursor = 'pointer';
+        item.onclick = () => cycleTaskStatus(task.id, task.status);
+
+        item.innerHTML = `
+            <div style="width:100%; display:flex; justify-content:space-between;">
+                <h5 style="font-size: 0.9375rem;">${task.title}</h5>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Due ${new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <img src="https://i.pravatar.cc/150?u=${task.id}" style="width:20px; height:20px; border-radius:50%;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">${task.assignedTo || 'Unassigned'}</span>
+            </div>
+        `;
+
+        if (columns[task.status]) columns[task.status].appendChild(item);
+    });
+}
+
+function renderTeamList(users) {
+    const list = document.getElementById('page-team-list');
+    list.innerHTML = '';
+    users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.textAlign = 'center';
+        card.innerHTML = `
+            <img src="https://i.pravatar.cc/150?u=${user.id}" class="avatar" style="width:80px; height:80px; margin-bottom:1rem;">
+            <h4 style="margin-bottom:0.25rem;">${user.name}</h4>
+            <p style="color: var(--text-muted); font-size:0.875rem; margin-bottom:1rem;">${user.email}</p>
+            <span class="badge ${user.role === 'Admin' ? 'badge-success' : 'badge-pending'}" style="text-transform: capitalize;">${user.role}</span>
+        `;
+        list.appendChild(card);
+    });
+}
+
+async function cycleTaskStatus(taskId, currentStatus) {
+    const cycle = ['Pending', 'In Progress', 'Completed'];
+    const next = cycle[(cycle.indexOf(currentStatus) + 1) % cycle.length];
+    
     try {
         const res = await fetch(`${API}/tasks/${taskId}`, {
             method: 'PATCH',
@@ -231,360 +382,80 @@ window.updateTaskStatus = async function(taskId, currentStatus) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ status: nextStatus })
+            body: JSON.stringify({ status: next })
         });
-
-        if (res.ok) {
-            fetchTasks(); // Refresh list
-        }
+        if (res.ok) fetchData();
     } catch (err) {
-        showToast('Error updating status', 'error');
+        showToast('Error updating task', 'error');
     }
 }
 
-window.completeProject = async function(projectId) {
-    if (!confirm('Mark all tasks in this project as completed?')) return;
-    
-    try {
-        const res = await fetch(`${API}/projects/${projectId}/complete`, {
-            method: 'PATCH',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+// --- UI Helpers ---
 
-        if (res.ok) {
-            showToast('Project completed!', 'success');
-            fetchTasks(); // Refresh tasks and projects
-        } else {
-            const data = await res.json();
-            showToast(data.message || 'Error completing project', 'error');
-        }
-    } catch (err) {
-        showToast('Error completing project', 'error');
+window.showTab = function(tabName, filter = null) {
+    // Scroll to top
+    window.scrollTo(0,0);
+
+    const views = ['dashboard', 'projects', 'tasks', 'team', 'calendar', 'settings'];
+    views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        if (viewEl) viewEl.classList.add('hidden');
+        const navEl = document.getElementById(`nav-${v}`);
+        if (navEl) navEl.classList.remove('active');
+    });
+
+    document.getElementById(`view-${tabName}`).classList.remove('hidden');
+    document.getElementById(`nav-${tabName}`).classList.add('active');
+    document.getElementById('active-tab-title').textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+
+    if (tabName === 'tasks') {
+        renderTasksPage(filter);
     }
-}
-
-// --- UI Logic ---
-
-function renderProjects(projects) {
-    const projectList = document.getElementById('project-list');
-    const allProjectList = document.getElementById('all-projects-list');
-    const pageProjectsList = document.getElementById('page-projects-list');
-    
-    projectList.innerHTML = '';
-    if(allProjectList) allProjectList.innerHTML = '';
-    if(pageProjectsList) pageProjectsList.innerHTML = '';
-    
-    document.getElementById('stat-projects').textContent = projects.length;
-    document.getElementById('stat-proj-sub').textContent = projects.length + ' ongoing';
-
-    // Helper to generate the card HTML
-    const generateProjectCard = (project) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        
-        // Calculate actual progress based on tasks with date-based logic
-        const projectTasks = allTasks.filter(t => parseInt(t.projectId) === project.id || t.projectId === project.id.toString());
-        const totalProjectTasks = projectTasks.length;
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        const completedProjectTasks = projectTasks.filter(t => {
-            const d = new Date(t.dueDate);
-            d.setHours(0,0,0,0);
-            // Past date = auto-completed, or manually completed
-            return t.status === 'Completed' || d < now;
-        }).length;
-        const progress = totalProjectTasks > 0 ? Math.round((completedProjectTasks / totalProjectTasks) * 100) : 0;
-        
-        item.innerHTML = `
-            <div class="task-info" style="flex:1;">
-                <div class="task-icon" style="background: var(--primary-light); border:none; width:36px; height:36px; border-radius:8px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                </div>
-                <div class="task-text" style="width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    <h5>${project.name}</h5>
-                    <p>${completedProjectTasks} of ${totalProjectTasks} tasks done</p>
-                </div>
-            </div>
-            <div class="project-progress">
-                <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%;"></div></div>
-                <span class="progress-text">${progress}%</span>
-            </div>
-            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; min-width:60px;">
-                <div class="avatar-group">
-                    <img src="https://i.pravatar.cc/150?u=${project.id}1">
-                    <img src="https://i.pravatar.cc/150?u=${project.id}2">
-                    <div class="more">+2</div>
-                </div>
-                ${currentUser && currentUser.role === 'Admin' && progress < 100 ? 
-                    `<button class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size:0.75rem;" onclick="completeProject('${project.id}')">✓ Complete</button>` : ''}
-            </div>
-        `;
-        return item;
-    };
-
-    // Render All Projects in Modal and Projects Page
-    projects.forEach(project => {
-        if(allProjectList) allProjectList.appendChild(generateProjectCard(project));
-        if(pageProjectsList) pageProjectsList.appendChild(generateProjectCard(project));
-    });
-
-    // Render Top 3 in Dashboard
-    const topProjects = projects.slice(0, 3);
-    topProjects.forEach(project => {
-        projectList.appendChild(generateProjectCard(project));
-    });
-
-    if (projects.length === 0) {
-        projectList.innerHTML = '<p class="text-muted" style="padding: 1rem 0;">No projects found.</p>';
-        if(allProjectList) allProjectList.innerHTML = '<p class="text-muted">No projects found.</p>';
-    }
-}
-
-function renderTasks(tasks) {
-    const taskList = document.getElementById('task-list');
-    const overdueList = document.getElementById('overdue-list');
-    const pendingList = document.getElementById('page-tasks-pending');
-    const progressList = document.getElementById('page-tasks-progress');
-    const completedList = document.getElementById('page-tasks-completed');
-    
-    taskList.innerHTML = '';
-    overdueList.innerHTML = '';
-    if (pendingList) pendingList.innerHTML = '';
-    if (progressList) progressList.innerHTML = '';
-    if (completedList) completedList.innerHTML = '';
-
-    const now = new Date();
-    now.setHours(0,0,0,0); // Normalize to start of today
-    
-    let stats = { total: tasks.length, progress: 0, completed: 0, overdue: 0, pending: 0 };
-
-    tasks.forEach(task => {
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0,0,0,0); // Normalize task due date
-        
-        let isOverdue = false;
-
-        // Apply automatic date rules requested by user
-        if (dueDate < now) {
-            // Past date: mark as completed
-            task.status = 'Completed';
-        } else if (dueDate.getTime() === now.getTime()) {
-            // Today's date: show overdue
-            if (task.status !== 'Completed') {
-                isOverdue = true;
-                // Force status to Pending if it's not already something else valid
-                if(task.status !== 'In Progress') task.status = 'Pending';
-            }
-        } else {
-            // Upcoming date: mark pending
-            if (task.status !== 'Completed' && task.status !== 'In Progress') {
-                task.status = 'Pending';
-            }
-        }
-        
-        if (task.status === 'In Progress') stats.progress++;
-        else if (task.status === 'Completed') stats.completed++;
-        else stats.pending++;
-        
-        if (isOverdue) stats.overdue++;
-
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        
-        const statusClass = task.status === 'In Progress' ? 'progress' : task.status.toLowerCase();
-        
-        let iconHtml = '';
-        if (task.status === 'Completed') {
-            iconHtml = `<div class="task-icon completed" onclick="updateTaskStatus('${task.id}', '${task.status}')" style="cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"></path></svg></div>`;
-        } else if (isOverdue) {
-            iconHtml = `<div class="task-icon overdue" onclick="updateTaskStatus('${task.id}', '${task.status}')" style="cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`;
-        } else {
-            iconHtml = `<div class="task-icon" onclick="updateTaskStatus('${task.id}', '${task.status}')" style="cursor:pointer;"></div>`;
-        }
-
-        item.innerHTML = `
-            <div class="task-info">
-                ${iconHtml}
-                <div class="task-text">
-                    <h5>${task.title}</h5>
-                    <p>Project ID: ${task.projectId}</p>
-                </div>
-            </div>
-            <div class="task-meta" style="display:flex; align-items:center; gap:0.5rem;">
-                ${isOverdue ? '<span class="badge overdue">Overdue</span>' : ''}
-                <span class="badge ${statusClass}" style="cursor:pointer;" onclick="updateTaskStatus('${task.id}', '${task.status}')">${task.status}</span>
-                <span style="font-size: 0.85rem; color: var(--text-muted);">Due: ${new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-            </div>
-        `;
-
-        if (isOverdue) {
-            overdueList.appendChild(item);
-        } else {
-            taskList.appendChild(item);
-        }
-
-        // Add to tasks page columns
-        const clonedItem = item.cloneNode(true);
-        if (task.status === 'Completed' && completedList) {
-            completedList.appendChild(clonedItem);
-        } else if (task.status === 'In Progress' && progressList) {
-            progressList.appendChild(clonedItem);
-        } else if (task.status === 'Pending' && pendingList) {
-            pendingList.appendChild(clonedItem);
-        }
-    });
-
-    // Update Top Stat Cards
-    document.getElementById('stat-tasks').textContent = stats.total;
-    document.getElementById('stat-task-sub').textContent = stats.completed + ' completed';
-    
-    document.getElementById('stat-progress').textContent = stats.progress;
-    document.getElementById('stat-prog-sub').textContent = stats.total > 0 ? Math.round((stats.progress/stats.total)*100) + '% of tasks' : '0% of tasks';
-    
-    document.getElementById('stat-overdue').textContent = stats.overdue;
-
-    // Update Chart Legend
-    document.getElementById('chart-total').textContent = stats.total;
-    
-    const pct = (val) => stats.total > 0 ? Math.round((val/stats.total)*100) : 0;
-    
-    document.getElementById('leg-completed').textContent = `${stats.completed} (${pct(stats.completed)}%)`;
-    document.getElementById('leg-progress').textContent = `${stats.progress} (${pct(stats.progress)}%)`;
-    document.getElementById('leg-pending').textContent = `${stats.pending} (${pct(stats.pending)}%)`;
-    document.getElementById('leg-overdue').textContent = `${stats.overdue} (${pct(stats.overdue)}%)`;
-
-    // Dynamic Donut Chart Gradient
-    const pComp = pct(stats.completed);
-    const pProg = pComp + pct(stats.progress);
-    const pPend = pProg + pct(stats.pending);
-    
-    document.getElementById('donut-chart').style.background = `conic-gradient(
-        var(--success) 0% ${pComp}%,
-        var(--warning) ${pComp}% ${pProg}%,
-        var(--primary) ${pProg}% ${pPend}%,
-        var(--danger) ${pPend}% 100%
-    )`;
-
-    if (overdueList.innerHTML === '') overdueList.innerHTML = '<p class="text-muted" style="padding: 1rem 0;">No overdue tasks.</p>';
-    if (taskList.innerHTML === '') taskList.innerHTML = '<p class="text-muted" style="padding: 1rem 0;">No tasks found.</p>';
-}
-
-function renderUsers(users) {
-    const teamList = document.getElementById('page-team-list');
-    if (!teamList) return;
-    teamList.innerHTML = '';
-
-    if (users.length === 0) {
-        teamList.innerHTML = '<p class="text-muted">No team members found.</p>';
-        return;
-    }
-
-    users.forEach(user => {
-        const item = document.createElement('div');
-        item.className = 'card list-item';
-        item.style.flexDirection = 'column';
-        item.style.alignItems = 'center';
-        item.style.textAlign = 'center';
-        item.style.padding = '1.5rem';
-        item.innerHTML = `
-            <img src="https://i.pravatar.cc/150?u=${user.id}1" class="avatar" style="width:64px; height:64px; margin-bottom:1rem;">
-            <h4 style="margin-bottom:0.25rem;">${user.name}</h4>
-            <p class="text-muted" style="font-size:0.875rem; margin-bottom:0.5rem;">${user.email}</p>
-            <span class="badge ${user.role === 'Admin' ? 'progress' : 'pending'}">${user.role}</span>
-        `;
-        teamList.appendChild(item);
-    });
 }
 
 function updateUserInfo() {
-    if (currentUser) {
-        // Top Nav
-        document.getElementById('user-name-top').textContent = currentUser.name;
-        document.getElementById('user-role-top').textContent = currentUser.role;
-        
-        // Sidebar
-        document.getElementById('user-name-side').textContent = currentUser.name;
-        
-        // Show project creation button for admins
-        if (currentUser.role === 'Admin') {
-            document.getElementById('btn-create-project').classList.remove('hidden');
-            const pageBtn = document.getElementById('btn-create-project-page');
-            if(pageBtn) pageBtn.classList.remove('hidden');
-        } else {
-            document.getElementById('btn-create-project').classList.add('hidden');
-            const pageBtn = document.getElementById('btn-create-project-page');
-            if(pageBtn) pageBtn.classList.add('hidden');
-        }
-    }
+    if (!currentUser) return;
+    document.getElementById('user-name-top').textContent = currentUser.name;
+    document.getElementById('user-role-top').textContent = currentUser.role === 'Admin' ? 'Administrator' : 'Team Member';
+    document.getElementById('user-name-side').textContent = currentUser.name;
+    document.getElementById('user-role-side').textContent = currentUser.role;
+    document.getElementById('welcome-name').textContent = currentUser.name.split(' ')[0];
+    
+    const avatarUrl = `https://i.pravatar.cc/150?u=${currentUser.id}`;
+    document.getElementById('sidebar-avatar').src = avatarUrl;
+    document.getElementById('top-avatar').src = avatarUrl;
 }
 
-window.toggleAuth = function(isLogin) {
+window.toggleAuth = (isLogin) => {
     document.getElementById('login-form').classList.toggle('hidden', !isLogin);
     document.getElementById('signup-form').classList.toggle('hidden', isLogin);
-}
+};
 
-function showPage(pageId) {
-    document.getElementById('auth-section').classList.toggle('hidden', pageId !== 'auth-section');
-    document.getElementById('app-section').classList.toggle('hidden', pageId !== 'app-section');
-}
-
-window.showTab = function(tabName) {
-    // Hide all views
-    document.getElementById('view-dashboard').classList.add('hidden');
-    document.getElementById('view-projects').classList.add('hidden');
-    document.getElementById('view-tasks').classList.add('hidden');
-    document.getElementById('view-team').classList.add('hidden');
-
-    // Remove active class from all nav items
-    document.querySelectorAll('.sidebar-nav .nav-item').forEach(nav => nav.classList.remove('active'));
-
-    // Show selected view and activate nav item
-    document.getElementById(`view-${tabName}`).classList.remove('hidden');
-    document.getElementById(`nav-${tabName}`).classList.add('active');
-
-    // Update top nav title based on tab
-    const titleMap = {
-        'dashboard': 'Dashboard',
-        'projects': 'Projects',
-        'tasks': 'Task Board',
-        'team': 'Team Members'
-    };
-    document.querySelector('.nav-title').textContent = titleMap[tabName];
-}
-
-function saveAuth(newToken, user) {
-    token = newToken;
-    currentUser = user;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(currentUser));
-}
-
-window.logout = function() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+window.logout = () => {
+    localStorage.clear();
     location.reload();
+};
+
+window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+function showPage(id) {
+    document.getElementById('auth-section').classList.toggle('hidden', id !== 'auth-section');
+    document.getElementById('app-section').classList.toggle('hidden', id !== 'app-section');
 }
 
-window.openModal = function(id) {
-    document.getElementById(id).classList.remove('hidden');
+function saveAuth(t, u) {
+    token = t;
+    currentUser = u;
+    localStorage.setItem('token', t);
+    localStorage.setItem('user', JSON.stringify(u));
 }
 
-window.closeModal = function(id) {
-    document.getElementById(id).classList.add('hidden');
-}
-
-function showToast(message, type) {
-    const container = document.getElementById('toast-container');
+function showToast(msg, type) {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <span>${message}</span>
-    `;
-    container.appendChild(toast);
-    
+    toast.textContent = msg;
+    document.getElementById('toast-container').appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);

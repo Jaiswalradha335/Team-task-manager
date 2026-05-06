@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Task Manager</title>
+    <title>Team Task Manager | Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,50 +12,51 @@
     <div id="auth-section" class="auth-container">
         <div class="auth-card">
             <div id="login-form">
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Sign In</h2>
-                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">Welcome back to Task Manager.</p>
+                <h2 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.025em;">Sign In</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9375rem;">Enter your credentials to access your workspace.</p>
                 <form id="form-login">
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="login-email" required>
+                        <label>Email Address</label>
+                        <input type="email" id="login-email" placeholder="name@company.com" required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="login-password" required>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block" style="justify-content: center;">Sign In</button>
+                    <button type="submit" class="btn btn-primary btn-block" style="justify-content: center; margin-top: 1rem;">Sign In</button>
                 </form>
-                <p style="margin-top: 1rem; font-size: 0.875rem; text-align: center;">
-                    Don't have an account? <span style="color: var(--primary); cursor: pointer;" onclick="toggleAuth(false)">Sign up</span>
+                <p style="margin-top: 1.5rem; font-size: 0.875rem; text-align: center; color: var(--text-muted);">
+                    Don't have an account? <span style="color: var(--primary); cursor: pointer; font-weight: 700;" onclick="toggleAuth(false)">Create one</span>
                 </p>
             </div>
 
             <div id="signup-form" class="hidden">
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Create Account</h2>
+                <h2 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.025em;">Get Started</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9375rem;">Create your team account today.</p>
                 <form id="form-signup">
                     <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" id="signup-name" required>
+                        <label>Full Name</label>
+                        <input type="text" id="signup-name" placeholder="John Doe" required>
                     </div>
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="signup-email" required>
+                        <label>Email Address</label>
+                        <input type="email" id="signup-email" placeholder="name@company.com" required>
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="signup-password" required>
+                        <input type="password" id="signup-password" placeholder="••••••••" required>
                     </div>
                     <div class="form-group">
-                        <label>Role</label>
+                        <label>Organization Role</label>
                         <select id="signup-role">
-                            <option value="Member">Member</option>
-                            <option value="Admin">Admin</option>
+                            <option value="Member">Team Member</option>
+                            <option value="Admin">Administrator</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block" style="justify-content: center;">Sign Up</button>
+                    <button type="submit" class="btn btn-primary btn-block" style="justify-content: center; margin-top: 1rem;">Create Account</button>
                 </form>
-                <p style="margin-top: 1rem; font-size: 0.875rem; text-align: center;">
-                    Already have an account? <span style="color: var(--primary); cursor: pointer;" onclick="toggleAuth(true)">Sign in</span>
+                <p style="margin-top: 1.5rem; font-size: 0.875rem; text-align: center; color: var(--text-muted);">
+                    Already have an account? <span style="color: var(--primary); cursor: pointer; font-weight: 700;" onclick="toggleAuth(true)">Sign in</span>
                 </p>
             </div>
         </div>
@@ -67,33 +68,41 @@
         <aside class="sidebar">
             <div class="sidebar-logo">
                 <div class="icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"></path></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                 </div>
-                Team Task Manager
+                TeamTask
             </div>
             <nav class="sidebar-nav">
-                <a class="nav-item active" id="nav-dashboard" onclick="showTab('dashboard')" style="cursor: pointer;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                <a class="nav-item active" id="nav-dashboard" onclick="showTab('dashboard')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                     Dashboard
                 </a>
-                <a class="nav-item" id="nav-projects" onclick="showTab('projects')" style="cursor: pointer;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                <a class="nav-item" id="nav-projects" onclick="showTab('projects')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                     Projects
                 </a>
-                <a class="nav-item" id="nav-tasks" onclick="showTab('tasks')" style="cursor: pointer;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                <a class="nav-item" id="nav-tasks" onclick="showTab('tasks')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                     Tasks
                 </a>
-                <a class="nav-item" id="nav-team" onclick="showTab('team')" style="cursor: pointer;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <a class="nav-item" id="nav-team" onclick="showTab('team')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>
                     Team
                 </a>
+                <a class="nav-item" id="nav-calendar" onclick="showTab('calendar')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Calendar
+                </a>
+                <a class="nav-item" id="nav-settings" onclick="showTab('settings')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+                    Settings
+                </a>
             </nav>
-            <div class="sidebar-user">
-                <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" alt="User" class="avatar">
-                <div style="flex:1">
-                    <h5 id="user-name-side" style="font-size: 0.875rem;">Admin User</h5>
-                    <p id="user-email-side" style="font-size: 0.75rem; color: var(--sidebar-text);">admin@example.com</p>
+            <div class="sidebar-user" id="sidebar-user-pill">
+                <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" alt="User" class="avatar" id="sidebar-avatar">
+                <div style="flex:1; overflow:hidden;">
+                    <h5 id="user-name-side" style="font-size: 0.875rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User Name</h5>
+                    <p id="user-role-side" style="font-size: 0.75rem; color: var(--sidebar-text);">Member</p>
                 </div>
             </div>
         </aside>
@@ -102,145 +111,131 @@
         <main class="main-content">
             <!-- Top Nav -->
             <header class="top-nav">
-                <h1 class="nav-title">Dashboard</h1>
+                <h1 class="nav-title" id="active-tab-title">Dashboard</h1>
                 <div class="nav-actions">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); cursor: pointer;"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    <div style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;" onclick="logout()">
-                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" class="avatar" style="width: 32px; height: 32px;">
-                        <div style="display:flex; flex-direction:column; line-height:1.2;">
-                            <span id="user-name-top" style="font-size: 0.875rem; font-weight: 600;">Admin User</span>
-                            <span id="user-role-top" style="font-size: 0.75rem; color: var(--text-muted);">Admin</span>
+                    <div class="notification-bell">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"></path></svg>
+                        <span class="notification-dot"></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; cursor: pointer;" onclick="logout()">
+                        <div style="text-align: right;">
+                            <p id="user-name-top" style="font-size: 0.9375rem; font-weight: 700;">Admin User</p>
+                            <p id="user-role-top" style="font-size: 0.75rem; color: var(--text-muted);">Administrator</p>
                         </div>
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" class="avatar" style="width: 40px; height: 40px;" id="top-avatar">
                     </div>
                 </div>
             </header>
 
             <div id="view-dashboard" class="dashboard-content">
+                <div class="welcome-header">
+                    <h1>Welcome back, <span id="welcome-name">Radha</span></h1>
+                    <p>Here's what's happening across your projects today.</p>
+                </div>
+
                 <!-- Top 4 Stats -->
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg></div>
-                        <div class="stat-info">
-                            <h4>Projects</h4>
+                    <div class="stat-card" onclick="showTab('projects')">
+                        <div class="stat-main">
+                            <h4>Total Projects</h4>
                             <h2 id="stat-projects">0</h2>
-                            <p class="text-blue" id="stat-proj-sub">0 ongoing</p>
+                            <p id="stat-proj-sub">0 ongoing</p>
+                        </div>
+                        <div class="stat-icon-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div>
-                        <div class="stat-info">
-                            <h4>Tasks</h4>
+                    <div class="stat-card" onclick="showTab('tasks')">
+                        <div class="stat-main">
+                            <h4>Total Tasks</h4>
                             <h2 id="stat-tasks">0</h2>
-                            <p class="text-green" id="stat-task-sub">0 completed</p>
+                            <p id="stat-task-sub">0 completed</p>
+                        </div>
+                        <div class="stat-icon-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></div>
-                        <div class="stat-info">
+                    <div class="stat-card" onclick="showTab('tasks', 'In Progress')">
+                        <div class="stat-main">
                             <h4>In Progress</h4>
                             <h2 id="stat-progress">0</h2>
-                            <p class="text-orange" id="stat-prog-sub">0% of tasks</p>
+                            <p>Actively being worked on</p>
+                        </div>
+                        <div class="stat-icon-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
-                        <div class="stat-info">
-                            <h4>Overdue</h4>
-                            <h2 id="stat-overdue">0</h2>
-                            <p class="text-red">Needs attention</p>
+                    <div class="stat-card" onclick="showTab('tasks', 'Overdue')" style="border-color: rgba(239, 68, 68, 0.1);">
+                        <div class="stat-main">
+                            <h4 style="color: var(--danger);">Overdue</h4>
+                            <h2 id="stat-overdue" style="color: var(--danger);">0</h2>
+                            <p style="color: var(--danger);">Requires immediate attention</p>
+                        </div>
+                        <div class="stat-icon-box" style="color: var(--danger);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- Two Column Layout -->
                 <div class="dashboard-grid">
-                    
-                    <!-- LEFT COLUMN -->
+                    <!-- Recent Activity -->
                     <div class="dashboard-column">
-                        
-                        <!-- Tasks Overview (Chart) -->
-                        <div class="card">
+                        <div class="card" style="height: 100%;">
                             <div class="card-header">
-                                <span class="card-title">Tasks Overview</span>
+                                <span class="card-title">Recent Activity</span>
+                                <p style="font-size: 0.875rem; color: var(--text-muted);">Latest tasks across your projects</p>
                             </div>
-                            <div class="chart-container">
-                                <div class="donut" id="donut-chart">
-                                    <div class="donut-inner">
-                                        <h2 id="chart-total">0</h2>
-                                        <p>Total</p>
-                                    </div>
-                                </div>
-                                <div class="chart-legend">
-                                    <div class="legend-item">
-                                        <span class="legend-color"><span class="dot" style="background: var(--success);"></span> Completed</span>
-                                        <span class="text-muted" id="leg-completed">0 (0%)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-color"><span class="dot" style="background: var(--warning);"></span> In Progress</span>
-                                        <span class="text-muted" id="leg-progress">0 (0%)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-color"><span class="dot" style="background: var(--primary);"></span> Pending</span>
-                                        <span class="text-muted" id="leg-pending">0 (0%)</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-color"><span class="dot" style="background: var(--danger);"></span> Overdue</span>
-                                        <span class="text-muted" id="leg-overdue">0 (0%)</span>
-                                    </div>
-                                </div>
+                            <div id="recent-activity-list" class="activity-list">
+                                <!-- JS injected -->
                             </div>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="action-row">
-                            <button id="btn-create-project" class="btn btn-primary" onclick="openModal('modal-project')">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-                                Create Project
-                            </button>
-                            <button class="btn btn-secondary" style="background: #a855f7; border:none;" onclick="openModal('modal-task')">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-                                Create Task
-                            </button>
-                        </div>
-
-                        <!-- Projects List -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title">Projects</span>
-                                <span class="card-link" onclick="openModal('modal-all-projects')">View all</span>
-                            </div>
-                            <div id="project-list">
-                                <!-- JS injected projects -->
-                            </div>
-                        </div>
-
                     </div>
 
-                    <!-- RIGHT COLUMN -->
+                    <!-- Task Status Chart -->
                     <div class="dashboard-column">
-                        
-                        <!-- Recent Tasks -->
-                        <div class="card">
+                        <div class="card chart-card">
                             <div class="card-header">
-                                <span class="card-title">Recent Tasks</span>
-                                <span class="card-link" onclick="showTab('tasks')" style="cursor:pointer;">View all</span>
+                                <span class="card-title">Task Status</span>
+                                <p style="font-size: 0.875rem; color: var(--text-muted);">Breakdown of all active tasks</p>
                             </div>
-                            <div id="task-list">
-                                <!-- JS injected tasks -->
+                            <div class="donut-wrapper">
+                                <div class="donut-chart" id="status-donut"></div>
+                                <div class="donut-center">
+                                    <h3 id="chart-total-count">0</h3>
+                                    <p>Tasks</p>
+                                </div>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--success);"></span>
+                                    <span>Completed</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--primary);"></span>
+                                    <span>In Progress</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--warning);"></span>
+                                    <span>Pending</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--danger);"></span>
+                                    <span>Overdue</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Overdue Tasks -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title">Overdue Tasks</span>
-                                <span class="card-link" onclick="showTab('tasks')" style="cursor:pointer;">View all</span>
-                            </div>
-                            <div id="overdue-list">
-                                <!-- JS injected overdue tasks -->
-                            </div>
+                        <!-- Quick Actions -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <button class="btn btn-primary" onclick="openModal('modal-project')" style="width: 100%; justify-content: center;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                                New Project
+                            </button>
+                            <button class="btn" onclick="openModal('modal-task')" style="width: 100%; justify-content: center; background: white; border: 1px solid var(--border); color: var(--text-main);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                                New Task
+                            </button>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -248,43 +243,50 @@
             <!-- PROJECTS VIEW -->
             <div id="view-projects" class="dashboard-content hidden">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-                    <h2>Projects</h2>
-                    <button id="btn-create-project-page" class="btn btn-primary" onclick="openModal('modal-project')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
+                    <h2>Manage Projects</h2>
+                    <button class="btn btn-primary" onclick="openModal('modal-project')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
                         Create Project
                     </button>
                 </div>
-                <div class="card" style="padding: 1rem;">
-                    <div id="page-projects-list" class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                        <!-- JS injected projects -->
-                    </div>
+                <div id="page-projects-list" class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+                    <!-- JS injected projects -->
                 </div>
             </div>
 
             <!-- TASKS VIEW -->
             <div id="view-tasks" class="dashboard-content hidden">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-                    <h2>Tasks</h2>
-                    <button class="btn btn-secondary" style="background: #a855f7; border:none;" onclick="openModal('modal-task')">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
-                        Create Task
-                    </button>
+                    <h2>Tasks Workspace</h2>
+                    <div style="display:flex; gap: 1rem;">
+                        <select id="task-filter-project" class="btn" style="background: white; border: 1px solid var(--border); color: var(--text-main); padding: 0.5rem 1rem;">
+                            <option value="all">All Projects</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="openModal('modal-task')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
+                            Add Task
+                        </button>
+                    </div>
                 </div>
-                <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr);">
-                    <!-- Pending -->
-                    <div class="card" style="background: var(--surface);">
-                        <div class="card-header"><span class="card-title">Pending</span></div>
-                        <div id="page-tasks-pending" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); align-items: start;">
+                    <!-- Columns for Pending, In Progress, Completed -->
+                    <div class="task-column">
+                        <h4 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="legend-dot" style="background: var(--warning);"></span> Pending
+                        </h4>
+                        <div id="page-tasks-pending" style="display: flex; flex-direction: column; gap: 1rem;"></div>
                     </div>
-                    <!-- In Progress -->
-                    <div class="card" style="background: var(--surface);">
-                        <div class="card-header"><span class="card-title">In Progress</span></div>
-                        <div id="page-tasks-progress" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    <div class="task-column">
+                        <h4 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="legend-dot" style="background: var(--primary);"></span> In Progress
+                        </h4>
+                        <div id="page-tasks-progress" style="display: flex; flex-direction: column; gap: 1rem;"></div>
                     </div>
-                    <!-- Completed -->
-                    <div class="card" style="background: var(--surface);">
-                        <div class="card-header"><span class="card-title">Completed</span></div>
-                        <div id="page-tasks-completed" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                    <div class="task-column">
+                        <h4 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="legend-dot" style="background: var(--success);"></span> Completed
+                        </h4>
+                        <div id="page-tasks-completed" style="display: flex; flex-direction: column; gap: 1rem;"></div>
                     </div>
                 </div>
             </div>
@@ -292,75 +294,87 @@
             <!-- TEAM VIEW -->
             <div id="view-team" class="dashboard-content hidden">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-                    <h2>Team Members</h2>
+                    <h2>Our Team</h2>
                 </div>
-                <div id="page-team-list" class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                <div id="page-team-list" class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
                     <!-- JS injected team members -->
+                </div>
+            </div>
+
+            <!-- Placeholder views -->
+            <div id="view-calendar" class="dashboard-content hidden">
+                <h2>Calendar</h2>
+                <div class="card" style="margin-top: 2rem; padding: 4rem; text-align: center;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="color: var(--text-muted); margin-bottom: 1.5rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <h3>Calendar view coming soon</h3>
+                    <p style="color: var(--text-muted);">We are working on integrating a full interactive calendar.</p>
+                </div>
+            </div>
+
+            <div id="view-settings" class="dashboard-content hidden">
+                <h2>Settings</h2>
+                <div class="card" style="margin-top: 2rem;">
+                    <div style="padding: 1rem 0; border-bottom: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 0.5rem;">Profile Settings</h4>
+                        <p style="font-size: 0.875rem; color: var(--text-muted);">Manage your personal information and preferences.</p>
+                    </div>
+                    <div style="padding: 2rem 0;">
+                        <p>User profile settings and theme preferences will be available here.</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
     <!-- Modals -->
-    <div id="modal-all-projects" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem; position: sticky; top: -2rem; background: white; padding: 2rem 0 1rem 0; z-index: 10;">
-                <h3 style="font-size: 1.5rem;">All Projects</h3>
-                <span style="cursor:pointer; font-size: 1.5rem;" onclick="closeModal('modal-all-projects')">✕</span>
-            </div>
-            <div id="all-projects-list" class="dashboard-column">
-                <!-- JS injected full projects list -->
-            </div>
-        </div>
-    </div>
     <div id="modal-project" class="modal-overlay hidden">
         <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-                <h3>Create New Project</h3>
-                <span style="cursor:pointer;" onclick="closeModal('modal-project')">✕</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <h3 style="font-size: 1.5rem; font-weight: 800;">Create Project</h3>
+                <span style="cursor:pointer; font-size: 1.5rem; color: var(--text-muted);" onclick="closeModal('modal-project')">✕</span>
             </div>
             <form id="form-project">
                 <div class="form-group">
                     <label>Project Name</label>
-                    <input type="text" id="proj-name" required>
+                    <input type="text" id="proj-name" placeholder="e.g. Website Redesign" required>
                 </div>
                 <div class="form-group">
-                    <label>Description</label>
-                    <input type="text" id="proj-desc">
+                    <label>Brief Description</label>
+                    <input type="text" id="proj-desc" placeholder="What is this project about?">
                 </div>
                 <div class="form-group">
-                    <label>Members (IDs)</label>
-                    <input type="text" id="proj-members">
+                    <label>Assign Members (Enter Names)</label>
+                    <input type="text" id="proj-members" placeholder="Comma separated names">
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Create Project</button>
+                <button type="submit" class="btn btn-primary btn-block" style="justify-content:center; margin-top: 1.5rem;">Launch Project</button>
             </form>
         </div>
     </div>
 
     <div id="modal-task" class="modal-overlay hidden">
         <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-                <h3>Create New Task</h3>
-                <span style="cursor:pointer;" onclick="closeModal('modal-task')">✕</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <h3 style="font-size: 1.5rem; font-weight: 800;">Create Task</h3>
+                <span style="cursor:pointer; font-size: 1.5rem; color: var(--text-muted);" onclick="closeModal('modal-task')">✕</span>
             </div>
             <form id="form-task">
                 <div class="form-group">
                     <label>Task Title</label>
-                    <input type="text" id="task-title-input" required>
+                    <input type="text" id="task-title-input" placeholder="e.g. Design Landing Page" required>
                 </div>
                 <div class="form-group">
-                    <label>Due Date</label>
+                    <label>Deadline</label>
                     <input type="date" id="task-date" required>
                 </div>
                 <div class="form-group">
-                    <label>Project ID</label>
-                    <input type="text" id="task-project" required>
+                    <label>Select Project</label>
+                    <select id="task-project-select" required></select>
                 </div>
                 <div class="form-group">
-                    <label>Assign to User ID</label>
-                    <input type="text" id="task-assignee">
+                    <label>Assignee Name</label>
+                    <input type="text" id="task-assignee" placeholder="Who is responsible?">
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Create Task</button>
+                <button type="submit" class="btn btn-primary btn-block" style="justify-content:center; margin-top: 1.5rem;">Create Task</button>
             </form>
         </div>
     </div>
