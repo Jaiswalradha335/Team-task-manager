@@ -99,23 +99,25 @@ app.post('/api/auth/signup', async (req, res) => {
         return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        db.run(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`, 
-            [name, email, hashedPassword, role], 
-            function(err) {
-                if (err) {
-                    if (err.message.includes('UNIQUE constraint failed')) {
-                        return res.status(400).json({ message: 'Email already exists.' });
+    db.get(`SELECT id FROM users WHERE email = ?`, [email], async (err, user) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        if (user) return res.status(400).json({ message: 'Account already exists with this email.' });
+
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            db.run(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`, 
+                [name, email, hashedPassword, role], 
+                function(err) {
+                    if (err) {
+                        return res.status(500).json({ message: 'Error creating account.' });
                     }
-                    return res.status(500).json({ message: 'Database error.' });
+                    res.status(201).json({ message: 'User created successfully', userId: this.lastID });
                 }
-                res.status(201).json({ message: 'User created successfully', userId: this.lastID });
-            }
-        );
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-    }
+            );
+        } catch (err) {
+            res.status(500).json({ message: 'Server error' });
+        }
+    });
 });
 
 // Login: POST /api/auth/login

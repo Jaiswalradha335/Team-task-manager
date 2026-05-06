@@ -83,6 +83,9 @@ function setupFormListeners() {
         const role = document.getElementById('signup-role').value;
 
         try {
+            const errorEl = document.getElementById('signup-error');
+            errorEl.classList.add('hidden');
+            
             const res = await fetch(`${API}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -94,6 +97,8 @@ function setupFormListeners() {
                 showToast('Account created! Please login.', 'success');
                 toggleAuth(true);
             } else {
+                errorEl.textContent = data.message || 'Signup failed';
+                errorEl.classList.remove('hidden');
                 showToast(data.message || 'Signup failed', 'error');
             }
         } catch (err) {
