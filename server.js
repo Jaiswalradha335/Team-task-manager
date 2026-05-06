@@ -155,6 +155,23 @@ app.patch('/api/projects/:id/complete', authenticate, (req, res) => {
     });
 });
 
+// Update Project Members: PATCH /api/projects/:id/members (Admin only)
+app.patch('/api/projects/:id/members', authenticate, (req, res) => {
+    if (req.user.role !== 'Admin') {
+        return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
+    const { id } = req.params;
+    const { members } = req.body; // Expecting a string or array
+
+    const membersString = Array.isArray(members) ? members.join(',') : members;
+
+    db.run(`UPDATE projects SET members = ? WHERE id = ?`, [membersString, id], function(err) {
+        if (err) return res.status(500).json({ message: 'Database error.' });
+        if (this.changes === 0) return res.status(404).json({ message: 'Project not found.' });
+        res.json({ message: 'Members updated', id, members: membersString });
+    });
+});
+
 // Get Users: GET /api/users
 app.get('/api/users', authenticate, (req, res) => {
     db.all(`SELECT id, name, email, role FROM users`, [], (err, rows) => {

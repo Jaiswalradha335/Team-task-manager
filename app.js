@@ -177,16 +177,30 @@ async function fetchTasks() {
     }
 }
 
+let allUsers = [];
 async function fetchUsers() {
     try {
         const res = await fetch(`${API}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const users = await res.json();
-        renderTeamList(users);
+        allUsers = await res.json();
+        renderTeamList(allUsers);
+        populateMemberDropdown();
     } catch (err) {
         showToast('Error fetching users', 'error');
     }
+}
+
+function populateMemberDropdown() {
+    const select = document.getElementById('select-new-member');
+    if (!select) return;
+    select.innerHTML = '<option value="">Select Member</option>';
+    allUsers.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.name;
+        opt.textContent = `${u.name} (${u.role})`;
+        select.appendChild(opt);
+    });
 }
 
 function populateProjectDropdowns() {
@@ -286,6 +300,8 @@ function renderProjectsPage() {
 
         const card = document.createElement('div');
         card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.onclick = () => openProjectDetails(project.id);
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
                 <h3 style="font-size: 1.125rem;">${project.name}</h3>
@@ -307,6 +323,89 @@ function renderProjectsPage() {
         `;
         list.appendChild(card);
     });
+}
+
+window.openProjectDetails = function(projectId) {
+    const project = allProjects.find(p => p.id == projectId);
+    if (!project) return;
+
+    document.getElementById('detail-project-name').textContent = project.name;
+    document.getElementById('detail-project-desc').textContent = project.description || 'No description provided.';
+    
+    // Render Members
+    const membersDiv = document.getElementById('detail-project-members');
+    membersDiv.innerHTML = '';
+    const membersList = project.members ? project.members.split(',') : [];
+    membersList.forEach(m => {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-pending';
+        badge.textContent = m.trim();
+        membersDiv.appendChild(badge);
+    });
+
+    // Admin Add Member UI
+    const adminSection = document.getElementById('admin-add-member-section');
+    if (currentUser && currentUser.role === 'Admin') {
+        adminSection.classList.remove('hidden');
+        document.getElementById('btn-add-member').onclick = () => addMemberToProject(projectId);
+    } else {
+        adminSection.classList.add('hidden');
+    }
+
+    // Project Tasks
+    const tasksDiv = document.getElementById('detail-project-tasks');
+    tasksDiv.innerHTML = '';
+    const pTasks = allTasks.filter(t => t.projectId == projectId);
+    if (pTasks.length === 0) {
+        tasksDiv.innerHTML = '<p style="color: var(--text-muted); padding: 1rem;">No tasks yet.</p>';
+    }
+    pTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+            <div class="activity-info">
+                <h5>${task.title}</h5>
+                <p>Status: ${task.status} • Due ${new Date(task.dueDate).toLocaleDateString()}</p>
+            </div>
+            <span class="badge ${task.status === 'Completed' ? 'badge-success' : 'badge-pending'}">${task.status}</span>
+        `;
+        tasksDiv.appendChild(item);
+    });
+
+    openModal('modal-project-details');
+};
+
+async function addMemberToProject(projectId) {
+    const project = allProjects.find(p => p.id == projectId);
+    const newMember = document.getElementById('select-new-member').value;
+    if (!newMember) return showToast('Please select a member', 'error');
+
+    let currentMembers = project.members ? project.members.split(',') : [];
+    if (currentMembers.includes(newMember)) return showToast('Member already in project', 'error');
+    
+    currentMembers.push(newMember);
+    const updatedMembers = currentMembers.join(',');
+
+    try {
+        const res = await fetch(`${API}/projects/${projectId}/members`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ members: updatedMembers })
+        });
+        
+        if (res.ok) {
+            showToast('Member added!', 'success');
+            await fetchProjects();
+            openProjectDetails(projectId); // Refresh view
+        } else {
+            showToast('Failed to add member', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
 }
 
 function renderTasksPage(filterStatus = null) {
