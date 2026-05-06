@@ -6,7 +6,7 @@ A premium, full-stack project management platform designed for modern teams. Thi
 
 ## 🌐 Live Demo
 You can access the live production version of this project here:
-👉 **[Live Project on Railway](https://team-task-manager-production-d96b.up.railway.app)**
+👉 **[Live Project on Railway](https://team-task-manager-production-d96b.up.railway.app)
 
 ---
 
