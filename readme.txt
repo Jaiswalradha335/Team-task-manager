@@ -8,7 +8,7 @@ modern teams to track tasks, manage projects, and monitor
 performance in real-time.
 
 LIVE PROJECT URL:
-https://team-task-manager-production.up.railway.app/
+https://team-task-manager-production-d96b.up.railway.app
 
 KEY FEATURES:
 - Dynamic Dashboard with Real-time Statistics
