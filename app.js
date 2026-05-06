@@ -227,12 +227,14 @@ function renderDashboard() {
 
     // Calculate Stats
     const stats = {
-        projects: allProjects.length,
+        totalProjects: allProjects.length,
+        activeProjects: allProjects.filter(p => p.status !== 'Completed').length,
+        completedProjects: allProjects.filter(p => p.status === 'Completed').length,
         tasks: allTasks.length,
-        completed: allTasks.filter(t => t.status === 'Completed').length,
-        progress: allTasks.filter(t => t.status === 'In Progress').length,
-        pending: allTasks.filter(t => t.status === 'Pending').length,
-        overdue: allTasks.filter(t => {
+        completedTasks: allTasks.filter(t => t.status === 'Completed').length,
+        progressTasks: allTasks.filter(t => t.status === 'In Progress').length,
+        pendingTasks: allTasks.filter(t => t.status === 'Pending').length,
+        overdueTasks: allTasks.filter(t => {
             const d = new Date(t.dueDate);
             d.setHours(0,0,0,0);
             return d <= now && t.status !== 'Completed';
@@ -240,12 +242,12 @@ function renderDashboard() {
     };
 
     // Update UI Stats
-    document.getElementById('stat-projects').textContent = stats.projects;
-    document.getElementById('stat-proj-sub').textContent = `${stats.projects} ongoing`;
+    document.getElementById('stat-projects').textContent = stats.activeProjects;
+    document.getElementById('stat-proj-sub').textContent = `${stats.completedProjects} archives`;
     document.getElementById('stat-tasks').textContent = stats.tasks;
-    document.getElementById('stat-task-sub').textContent = `${stats.completed} completed`;
-    document.getElementById('stat-progress').textContent = stats.progress;
-    document.getElementById('stat-overdue').textContent = stats.overdue;
+    document.getElementById('stat-task-sub').textContent = `${stats.completedTasks} completed`;
+    document.getElementById('stat-progress').textContent = stats.progressTasks;
+    document.getElementById('stat-overdue').textContent = stats.overdueTasks;
 
     // Render Recent Activity
     const activityList = document.getElementById('recent-activity-list');
@@ -272,10 +274,10 @@ function renderDashboard() {
 
     // Update Chart
     const total = stats.tasks || 1; // avoid divide by zero
-    const pComp = (stats.completed / total) * 100;
-    const pProg = (stats.progress / total) * 100;
-    const pPend = (stats.pending / total) * 100;
-    const pOver = (stats.overdue / total) * 100;
+    const pComp = (stats.completedTasks / total) * 100;
+    const pProg = (stats.progressTasks / total) * 100;
+    const pPend = (stats.pendingTasks / total) * 100;
+    const pOver = (stats.overdueTasks / total) * 100;
 
     document.getElementById('chart-total-count').textContent = stats.tasks;
     document.getElementById('status-donut').style.background = `conic-gradient(
