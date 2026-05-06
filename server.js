@@ -46,9 +46,31 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
             assignedTo TEXT,
             status TEXT DEFAULT 'Pending',
             FOREIGN KEY (projectId) REFERENCES projects(id)
-        )`);
+        )`, () => {
+            // Seed default data if empty
+            seedDatabase();
+        });
     }
 });
+
+async function seedDatabase() {
+    db.get("SELECT COUNT(*) as count FROM users", (err, row) => {
+        if (row && row.count === 0) {
+            console.log("Seeding default admin...");
+            const hashedPw = bcrypt.hashSync('admin123', 10);
+            db.run("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)", 
+                ['Admin User', 'admin@example.com', hashedPw, 'Admin']);
+        }
+    });
+
+    db.get("SELECT COUNT(*) as count FROM projects", (err, row) => {
+        if (row && row.count === 0) {
+            console.log("Seeding demo project...");
+            db.run("INSERT INTO projects (name, description, status) VALUES (?, ?, ?)", 
+                ['Demo Project', 'Welcome to your new Task Manager! This is a sample project created automatically.', 'Active']);
+        }
+    });
+}
 
 // Helper: Authentication Middleware (Role-Based Access Control)
 const authenticate = (req, res, next) => {
