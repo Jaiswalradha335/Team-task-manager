@@ -312,25 +312,25 @@ function renderDashboard() {
     document.getElementById('stat-progress').textContent = stats.progressTasks;
     document.getElementById('stat-overdue').textContent = stats.overdueTasks;
 
-    // Render Recent Activity
+    // Render Recent Activity (Showing Ongoing Projects)
     const activityList = document.getElementById('recent-activity-list');
     activityList.innerHTML = '';
-    const recentTasks = [...allTasks].sort((a,b) => b.id - a.id).slice(0, 5);
+    const ongoingProjects = [...allProjects].filter(p => p.status !== 'Completed').sort((a,b) => b.id - a.id).slice(0, 5);
     
-    recentTasks.forEach(task => {
-        const project = allProjects.find(p => p.id == task.projectId);
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0,0,0,0);
-        const isOverdue = dueDate <= now && task.status !== 'Completed';
-        
+    ongoingProjects.forEach(project => {
         const item = document.createElement('div');
         item.className = 'activity-item';
+        item.style.cursor = 'pointer';
+        item.onclick = () => openProjectDetails(project.id);
+        
+        const membersCount = project.members ? project.members.split(',').length : 0;
+        
         item.innerHTML = `
             <div class="activity-info">
-                <h5>${task.title}</h5>
-                <p>${project ? project.name : 'Unknown Project'} • ${task.assignedTo || 'Unassigned'}</p>
+                <h5>${project.name}</h5>
+                <p>${membersCount} Team Members • ${project.status}</p>
             </div>
-            <span class="badge ${isOverdue ? 'badge-overdue' : 'badge-pending'}">${isOverdue ? 'overdue' : task.status.toLowerCase()}</span>
+            <span class="badge badge-pending">ongoing</span>
         `;
         activityList.appendChild(item);
     });
@@ -640,7 +640,7 @@ function renderTasksPage(filterStatus = null) {
             </div>
             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Due ${new Date(task.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
             <div style="display:flex; gap:0.5rem; align-items:center;">
-                <img src="https://i.pravatar.cc/150?u=${task.id}" style="width:20px; height:20px; border-radius:50%;">
+                <img src="${getAvatarUrl(task.assignedTo, task.id)}" style="width:20px; height:20px; border-radius:50%;">
                 <span style="font-size: 0.75rem; color: var(--text-muted);">${task.assignedTo || 'Unassigned'}</span>
             </div>
         `;
@@ -861,7 +861,7 @@ window.openMemberDetails = function(user) {
     document.getElementById('member-detail-name').textContent = user.name;
     document.getElementById('member-detail-email').textContent = user.email;
     document.getElementById('member-detail-role').textContent = user.role;
-    document.getElementById('member-detail-avatar').src = `https://i.pravatar.cc/150?u=${user.id}`;
+    document.getElementById('member-detail-avatar').src = getAvatarUrl(user.name, user.id);
     
     const userProjects = allProjects.filter(p => p.members && p.members.includes(user.name));
     const userTasks = allTasks.filter(t => t.assignedTo === user.name);
@@ -942,9 +942,22 @@ function updateUserInfo() {
     document.getElementById('user-role-side').textContent = currentUser.role;
     document.getElementById('welcome-name').textContent = currentUser.name.split(' ')[0];
     
-    const avatarUrl = `https://i.pravatar.cc/150?u=${currentUser.id}`;
+    const avatarUrl = getAvatarUrl(currentUser.name, currentUser.id);
     document.getElementById('sidebar-avatar').src = avatarUrl;
     document.getElementById('top-avatar').src = avatarUrl;
+}
+
+function getAvatarUrl(name, id) {
+    if (!name) return `https://i.pravatar.cc/150?u=${id}`;
+    
+    const femaleNames = ['radha', 'maya', 'priya', 'anita', 'sneha', 'neha', 'pooja', 'jaiswal', 'rani'];
+    const isFemale = femaleNames.some(fn => name.toLowerCase().includes(fn));
+    
+    if (isFemale) {
+        // Use a consistent female avatar for female names
+        return `https://i.pravatar.cc/150?u=female${id % 10}`;
+    }
+    return `https://i.pravatar.cc/150?u=${id}`;
 }
 
 window.toggleAuth = (isLogin) => {
