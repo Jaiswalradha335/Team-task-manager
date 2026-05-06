@@ -231,6 +231,41 @@ app.patch('/api/tasks/:id', authenticate, (req, res) => {
     });
 });
 
+// Delete Project: DELETE /api/projects/:id (Admin only)
+app.delete('/api/projects/:id', authenticate, (req, res) => {
+    if (req.user.role !== 'Admin') {
+        return res.status(403).json({ message: 'Access denied. Admins only.' });
+    }
+    const { id } = req.params;
+    const projectId = parseInt(id);
+
+    if (isNaN(projectId)) {
+        return res.status(400).json({ message: 'Invalid project ID.' });
+    }
+
+    console.log(`Attempting to delete project with ID: ${projectId}`);
+
+    db.run(`DELETE FROM projects WHERE id = ?`, [projectId], function(err) {
+        if (err) {
+            console.error('Delete Project Error:', err);
+            return res.status(500).json({ message: 'Database error.' });
+        }
+        
+        if (this.changes === 0) {
+            console.warn(`Project with ID ${projectId} not found or no changes made.`);
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+
+        console.log(`Project ${projectId} deleted. Now deleting associated tasks...`);
+
+        // Also delete tasks associated with this project
+        db.run(`DELETE FROM tasks WHERE projectId = ?`, [projectId], (err) => {
+            if (err) console.error('Error deleting tasks for project:', projectId);
+            res.json({ message: 'Project and associated tasks deleted successfully.' });
+        });
+    });
+});
+
 // Catch-all to serve index.html for frontend routing
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));

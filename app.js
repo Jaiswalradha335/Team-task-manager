@@ -5,6 +5,7 @@ let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let token = localStorage.getItem('token') || null;
 let allTasks = [];
 let allProjects = [];
+let currentCalendarDate = new Date();
 
 // --- Initialize App ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,6 +33,18 @@ async function fetchData() {
         fetchUsers()
     ]);
     renderDashboard();
+    renderProjectsPage();
+    renderTasksPage();
+    renderTeamList(allUsers);
+    
+    // Role based restrictions on Dashboard
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const quickActions = document.querySelectorAll('.dashboard-column button.btn');
+    quickActions.forEach(btn => {
+        if (!isAdmin) {
+            btn.style.display = 'none';
+        }
+    });
 }
 
 function setupFormListeners() {
@@ -109,6 +122,8 @@ function setupFormListeners() {
                 showToast('Project launched!', 'success');
                 closeModal('modal-project');
                 e.target.reset();
+                document.getElementById('proj-members').value = '';
+                document.getElementById('project-members-container').innerHTML = '';
                 fetchData();
             } else {
                 const data = await res.json();
@@ -125,7 +140,7 @@ function setupFormListeners() {
         const title = document.getElementById('task-title-input').value;
         const dueDate = document.getElementById('task-date').value;
         const projectId = document.getElementById('task-project-select').value;
-        const assignedTo = document.getElementById('task-assignee').value;
+        const assignedTo = document.getElementById('task-assignee-select').value;
 
         try {
             const res = await fetch(`${API}/tasks`, {
@@ -192,16 +207,64 @@ async function fetchUsers() {
 }
 
 function populateMemberDropdown() {
-    const select = document.getElementById('select-new-member');
-    if (!select) return;
-    select.innerHTML = '<option value="">Select Member</option>';
-    allUsers.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.name;
-        opt.textContent = `${u.name} (${u.role})`;
-        select.appendChild(opt);
+    const selects = [
+        document.getElementById('select-new-member'),
+        document.getElementById('select-project-member'),
+        document.getElementById('task-assignee-select')
+    ];
+    
+    selects.forEach(select => {
+        if (!select) return;
+        select.innerHTML = '<option value="">Select Member</option>';
+        allUsers.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.name;
+            opt.textContent = `${u.name} (${u.role})`;
+            select.appendChild(opt);
+        });
+    });
+
+    // Special logic for adding members to a new project
+    const projMemberSelect = document.getElementById('select-project-member');
+    if (projMemberSelect) {
+        projMemberSelect.onchange = (e) => {
+            const name = e.target.value;
+            if (!name) return;
+            
+            const hiddenInput = document.getElementById('proj-members');
+            let current = hiddenInput.value ? hiddenInput.value.split(',') : [];
+            
+            if (!current.includes(name)) {
+                current.push(name);
+                hiddenInput.value = current.join(',');
+                renderProjectMemberBadges(current);
+            }
+            e.target.value = ''; // Reset
+        };
+    }
+}
+
+function renderProjectMemberBadges(members) {
+    const container = document.getElementById('project-members-container');
+    container.innerHTML = '';
+    members.forEach(m => {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-pending';
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '0.5rem';
+        badge.innerHTML = `${m} <span style="cursor:pointer; font-weight:800;" onclick="removeMemberFromNewProject('${m}')">✕</span>`;
+        container.appendChild(badge);
     });
 }
+
+window.removeMemberFromNewProject = function(name) {
+    const hiddenInput = document.getElementById('proj-members');
+    let current = hiddenInput.value.split(',');
+    current = current.filter(m => m !== name);
+    hiddenInput.value = current.join(',');
+    renderProjectMemberBadges(current);
+};
 
 function populateProjectDropdowns() {
     const selects = [document.getElementById('task-project-select'), document.getElementById('task-filter-project')];
@@ -308,7 +371,7 @@ function renderProjectsPage() {
         card.onclick = () => openProjectDetails(project.id);
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-                <h3 style="font-size: 1.125rem; font-weight: 700;">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
+                <h3 style="font-size: 1.125rem; font-weight: 700;">#${project.id} ${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
                 <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-pending'}">${isProjectCompleted ? '100%' : progress + '%'}</span>
             </div>
             <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; min-height: 3em;">${project.description || 'No description provided.'}</p>
@@ -327,6 +390,12 @@ function renderProjectsPage() {
         `;
         list.appendChild(card);
     });
+
+    // Hide Create button for members
+    const createBtn = document.querySelector('#view-projects .btn-primary');
+    if (createBtn) {
+        createBtn.style.display = (currentUser && currentUser.role === 'Admin') ? 'flex' : 'none';
+    }
 }
 
 window.openProjectDetails = function(projectId) {
@@ -339,7 +408,7 @@ window.openProjectDetails = function(projectId) {
     const isProjectCompleted = project.status === 'Completed';
 
     const detailName = document.getElementById('detail-project-name');
-    detailName.innerHTML = `${project.name} ${isProjectCompleted ? '✅' : ''}`;
+    detailName.innerHTML = `#${project.id} ${project.name} ${isProjectCompleted ? '✅' : ''}`;
     if (isProjectCompleted) detailName.style.color = 'var(--success)';
     else detailName.style.color = 'var(--text-main)';
 
@@ -358,10 +427,33 @@ window.openProjectDetails = function(projectId) {
     const membersDiv = document.getElementById('detail-project-members');
     membersDiv.innerHTML = '';
     const membersList = project.members ? project.members.split(',') : [];
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+
     membersList.forEach(m => {
-        const badge = document.createElement('span');
+        const badge = document.createElement('div');
         badge.className = 'badge badge-pending';
-        badge.textContent = m.trim();
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '0.5rem';
+        badge.style.padding = '0.5rem 0.75rem';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = m.trim();
+        badge.appendChild(nameSpan);
+
+        if (isAdmin) {
+            const removeIcon = document.createElement('span');
+            removeIcon.innerHTML = '✕';
+            removeIcon.style.cursor = 'pointer';
+            removeIcon.style.fontWeight = '800';
+            removeIcon.style.color = 'var(--danger)';
+            removeIcon.onclick = (e) => {
+                e.stopPropagation();
+                removeMemberFromProject(projectId, m.trim());
+            };
+            badge.appendChild(removeIcon);
+        }
+        
         membersDiv.appendChild(badge);
     });
 
@@ -383,6 +475,11 @@ window.openProjectDetails = function(projectId) {
             completeBtn.style.opacity = '1';
             completeBtn.onclick = () => completeProject(projectId);
         }
+
+        const deleteBtn = document.getElementById('btn-delete-project');
+        if (deleteBtn) {
+            deleteBtn.onclick = () => deleteProject(projectId);
+        }
     } else {
         adminSection.classList.add('hidden');
     }
@@ -390,7 +487,7 @@ window.openProjectDetails = function(projectId) {
     // Project Tasks
     const tasksDiv = document.getElementById('detail-project-tasks');
     tasksDiv.innerHTML = '';
-    const pTasks = allTasks.filter(t => t.projectId == projectId);
+    // pTasks is already declared above
     if (pTasks.length === 0) {
         tasksDiv.innerHTML = '<p style="color: var(--text-muted); padding: 1rem;">No tasks yet.</p>';
     }
@@ -408,6 +505,11 @@ window.openProjectDetails = function(projectId) {
     });
 
     openModal('modal-project-details');
+
+    const btnDelete = document.getElementById('btn-delete-project');
+    if (btnDelete) {
+        btnDelete.onclick = () => deleteProject(projectId);
+    }
 };
 
 async function addMemberToProject(projectId) {
@@ -467,6 +569,41 @@ async function completeProject(projectId) {
     }
 }
 
+async function deleteProject(projectId) {
+    console.log('Frontend attempting to delete project ID:', projectId);
+    if (!confirm('Are you sure you want to delete this project and all its tasks? This action cannot be undone.')) return;
+
+    try {
+        const res = await fetch(`${API}/projects/${projectId}`, {
+            method: 'DELETE',
+            headers: { 
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        console.log('Delete Response Status:', res.status);
+        
+        if (res.ok) {
+            const data = await res.json();
+            console.log('Delete Success:', data);
+            showToast('Project deleted successfully!', 'success');
+            closeModal('modal-project-details');
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            const data = await res.json();
+            console.error('Delete Failed:', data);
+            showToast(data.message || 'Failed to delete project', 'error');
+        }
+    } catch (err) {
+        console.error('Delete Error:', err);
+        showToast('Network error', 'error');
+    }
+}
+
+
+
 function renderTasksPage(filterStatus = null) {
     const columns = {
         'Pending': document.getElementById('page-tasks-pending'),
@@ -510,6 +647,12 @@ function renderTasksPage(filterStatus = null) {
 
         if (columns[task.status]) columns[task.status].appendChild(item);
     });
+
+    // Hide Add Task button for members
+    const addTaskBtn = document.querySelector('#view-tasks .btn-primary');
+    if (addTaskBtn) {
+        addTaskBtn.style.display = (currentUser && currentUser.role === 'Admin') ? 'flex' : 'none';
+    }
 }
 
 function renderTeamList(users) {
@@ -534,6 +677,8 @@ function renderTeamList(users) {
         const card = document.createElement('div');
         card.className = 'card';
         card.style.textAlign = 'center';
+        card.style.cursor = 'pointer';
+        card.onclick = () => openMemberDetails(user);
         card.innerHTML = `
             <img src="https://i.pravatar.cc/150?u=${user.id}" class="avatar" style="width:80px; height:80px; margin-bottom:1rem;">
             <h4 style="margin-bottom:0.25rem;">${user.name}</h4>
@@ -610,6 +755,183 @@ window.showTab = function(tabName, filter = null) {
     if (tabName === 'tasks') {
         renderTasksPage(filter);
     }
+    if (tabName === 'calendar') {
+        renderCalendar();
+    }
+    if (tabName === 'settings') {
+        renderSettings();
+    }
+}
+
+function renderSettings() {
+    const view = document.getElementById('view-settings');
+    if (!view) return;
+    
+    const content = view.querySelector('.card');
+    if (!content) return;
+
+    content.innerHTML = `
+        <div style="padding: 1.5rem 0; border-bottom: 1px solid var(--border); display:flex; align-items:center; gap: 2rem;">
+            <img src="https://i.pravatar.cc/150?u=${currentUser.id}" style="width:100px; height:100px; border-radius:50%; border: 4px solid var(--primary-light);">
+            <div>
+                <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">${currentUser.name}</h3>
+                <p style="color: var(--text-muted);">${currentUser.email} • <span class="badge badge-pending" style="text-transform: capitalize;">${currentUser.role}</span></p>
+            </div>
+        </div>
+        <div style="padding: 2.5rem 0;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="card" style="padding: 1.5rem; background: #f8fafc;">
+                    <h5 style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Member Since</h5>
+                    <p style="font-weight: 700;">Jan 2024</p>
+                </div>
+                <div class="card" style="padding: 1.5rem; background: #f8fafc;">
+                    <h5 style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Security Status</h5>
+                    <p style="font-weight: 700; color: var(--success);">Verified Account</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="showToast('Profile editing coming soon!', 'info')">Edit Profile</button>
+        </div>
+    `;
+}
+
+// --- Calendar Logic ---
+function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    const monthYearLabel = document.getElementById('calendar-month-year');
+    if (!grid || !monthYearLabel) return;
+
+    grid.innerHTML = '';
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    // Previous month days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day other-month';
+        dayDiv.innerHTML = `<span class="day-number">${prevMonthDays - i}</span>`;
+        grid.appendChild(dayDiv);
+    }
+
+    // Current month days
+    const today = new Date();
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayDiv = document.createElement('div');
+        const isToday = today.getDate() === i && today.getMonth() === month && today.getFullYear() === year;
+        dayDiv.className = `calendar-day ${isToday ? 'today' : ''}`;
+        dayDiv.innerHTML = `<span class="day-number">${i}</span>`;
+
+        // Check for tasks on this day
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const dayTasks = allTasks.filter(t => t.dueDate.startsWith(dateStr));
+
+        dayTasks.forEach(task => {
+            const tag = document.createElement('div');
+            tag.className = `calendar-task-tag ${task.status === 'Completed' ? 'completed' : ''}`;
+            tag.textContent = task.title;
+            dayDiv.appendChild(tag);
+        });
+
+        grid.appendChild(dayDiv);
+    }
+
+    // Next month days (to fill 42 cells)
+    const totalCells = 42;
+    const remainingCells = totalCells - grid.children.length;
+    for (let i = 1; i <= remainingCells; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day other-month';
+        dayDiv.innerHTML = `<span class="day-number">${i}</span>`;
+        grid.appendChild(dayDiv);
+    }
+}
+
+window.changeMonth = function(dir) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
+    renderCalendar();
+};
+
+window.openMemberDetails = function(user) {
+    document.getElementById('member-detail-name').textContent = user.name;
+    document.getElementById('member-detail-email').textContent = user.email;
+    document.getElementById('member-detail-role').textContent = user.role;
+    document.getElementById('member-detail-avatar').src = `https://i.pravatar.cc/150?u=${user.id}`;
+    
+    const userProjects = allProjects.filter(p => p.members && p.members.includes(user.name));
+    const userTasks = allTasks.filter(t => t.assignedTo === user.name);
+    
+    document.getElementById('member-stat-projects').textContent = userProjects.length;
+    document.getElementById('member-stat-tasks').textContent = userTasks.length;
+    
+    const activityDiv = document.getElementById('member-detail-activity');
+    activityDiv.innerHTML = '';
+    
+    if (userProjects.length === 0 && userTasks.length === 0) {
+        activityDiv.innerHTML = '<p style="color: var(--text-muted); padding: 1rem;">No active projects or tasks.</p>';
+    }
+
+    userProjects.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+            <div class="activity-info">
+                <h5>Project: ${p.name}</h5>
+                <p>Status: ${p.status}</p>
+            </div>
+            <span class="badge badge-success">Assigned</span>
+        `;
+        activityDiv.appendChild(item);
+    });
+
+    userTasks.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+            <div class="activity-info">
+                <h5>Task: ${t.title}</h5>
+                <p>Due: ${new Date(t.dueDate).toLocaleDateString()}</p>
+            </div>
+            <span class="badge ${t.status === 'Completed' ? 'badge-success' : 'badge-pending'}">${t.status}</span>
+        `;
+        activityDiv.appendChild(item);
+    });
+
+    openModal('modal-member-details');
+};
+
+async function removeMemberFromProject(projectId, memberName) {
+    if (!confirm(`Are you sure you want to remove ${memberName} from this project?`)) return;
+
+    const project = allProjects.find(p => p.id == projectId);
+    let currentMembers = project.members.split(',').map(m => m.trim());
+    const updatedMembers = currentMembers.filter(m => m !== memberName).join(',');
+
+    try {
+        const res = await fetch(`${API}/projects/${projectId}/members`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ members: updatedMembers })
+        });
+        
+        if (res.ok) {
+            showToast('Member removed', 'success');
+            await fetchProjects();
+            openProjectDetails(projectId);
+        } else {
+            showToast('Failed to remove member', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
 }
 
 function updateUserInfo() {
@@ -635,8 +957,14 @@ window.logout = () => {
     location.reload();
 };
 
-window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
-window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+window.openModal = (id) => {
+    document.getElementById(id).classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+};
+window.closeModal = (id) => {
+    document.getElementById(id).classList.add('hidden');
+    document.body.style.overflow = 'auto';
+};
 
 function showPage(id) {
     document.getElementById('auth-section').classList.toggle('hidden', id !== 'auth-section');
