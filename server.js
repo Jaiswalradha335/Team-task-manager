@@ -3,7 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-const Database = require('better-sqlite3');
+const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -16,34 +16,38 @@ app.use(express.static(path.join(__dirname))); // Serve frontend files
 
 // --- DATABASE SETUP (SQLite) ---
 const DB_PATH = process.env.DB_PATH || './database.sqlite';
-const db = new Database(DB_PATH);
-console.log('Connected to the SQLite database.');
+const db = new sqlite3.Database(DB_PATH, (err) => {
+    if (err) {
+        console.error('Error opening database', err.message);
+    } else {
+        console.log('Connected to the SQLite database.');
+        // Create Tables
+        db.run(`CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
+        )`);
 
-// Create Tables
-db.exec(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT NOT NULL
-)`);
+        db.run(`CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            members TEXT
+        )`);
 
-db.exec(`CREATE TABLE IF NOT EXISTS projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    members TEXT
-)`);
-
-db.exec(`CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    dueDate TEXT,
-    projectId INTEGER,
-    assignedTo TEXT,
-    status TEXT DEFAULT 'Pending',
-    FOREIGN KEY (projectId) REFERENCES projects(id)
-)`);
+        db.run(`CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            dueDate TEXT,
+            projectId INTEGER,
+            assignedTo TEXT,
+            status TEXT DEFAULT 'Pending',
+            FOREIGN KEY (projectId) REFERENCES projects(id)
+        )`);
+    }
+});
 
 // Helper: Authentication Middleware (Role-Based Access Control)
 const authenticate = (req, res, next) => {
@@ -74,16 +78,18 @@ app.post('/api/auth/signup', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        try {
-            const result = db.prepare(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`)
-                .run(name, email, hashedPassword, role);
-            res.status(201).json({ message: 'User created successfully', userId: result.lastInsertRowid });
-        } catch (dbErr) {
-            if (dbErr.message.includes('UNIQUE constraint failed')) {
-                return res.status(400).json({ message: 'Email already exists.' });
+        db.run(`INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)`, 
+            [name, email, hashedPassword, role], 
+            function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint failed')) {
+                        return res.status(400).json({ message: 'Email already exists.' });
+                    }
+                    return res.status(500).json({ message: 'Database error.' });
+                }
+                res.status(201).json({ message: 'User created successfully', userId: this.lastID });
             }
-            return res.status(500).json({ message: 'Database error.' });
-        }
+        );
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -95,17 +101,15 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!email || !password) return res.status(400).json({ message: 'Email and password required.' });
 
-    try {
-        const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(email);
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
+        if (err) return res.status(500).json({ message: 'Database error.' });
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
         const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, SECRET_KEY, { expiresIn: '24h' });
         res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // --- PROJECT ROUTES ---
@@ -122,23 +126,21 @@ app.post('/api/projects', authenticate, (req, res) => {
 
     const membersString = Array.isArray(members) ? members.join(',') : members;
 
-    try {
-        const result = db.prepare(`INSERT INTO projects (name, description, members) VALUES (?, ?, ?)`)
-            .run(name, description, membersString);
-        res.status(201).json({ id: result.lastInsertRowid, name, description, members: membersString });
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    db.run(`INSERT INTO projects (name, description, members) VALUES (?, ?, ?)`,
+        [name, description, membersString],
+        function(err) {
+            if (err) return res.status(500).json({ message: 'Database error.' });
+            res.status(201).json({ id: this.lastID, name, description, members: membersString });
+        }
+    );
 });
 
 // Get Projects: GET /api/projects
 app.get('/api/projects', authenticate, (req, res) => {
-    try {
-        const rows = db.prepare(`SELECT * FROM projects`).all();
+    db.all(`SELECT * FROM projects`, [], (err, rows) => {
+        if (err) return res.status(500).json({ message: 'Database error.' });
         res.json(rows);
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // Complete Project: PATCH /api/projects/:id/complete (Admin only)
@@ -147,22 +149,18 @@ app.patch('/api/projects/:id/complete', authenticate, (req, res) => {
         return res.status(403).json({ message: 'Access denied. Admins only.' });
     }
     const { id } = req.params;
-    try {
-        db.prepare(`UPDATE tasks SET status = 'Completed' WHERE projectId = ?`).run(id);
+    db.run(`UPDATE tasks SET status = 'Completed' WHERE projectId = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ message: 'Database error.' });
         res.json({ message: 'Project and all tasks marked as completed.' });
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // Get Users: GET /api/users
 app.get('/api/users', authenticate, (req, res) => {
-    try {
-        const rows = db.prepare(`SELECT id, name, email, role FROM users`).all();
+    db.all(`SELECT id, name, email, role FROM users`, [], (err, rows) => {
+        if (err) return res.status(500).json({ message: 'Database error.' });
         res.json(rows);
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // --- TASK ROUTES ---
@@ -174,23 +172,21 @@ app.post('/api/tasks', authenticate, (req, res) => {
     // Validations
     if (!title || !projectId) return res.status(400).json({ message: 'Title and Project ID are required.' });
 
-    try {
-        const result = db.prepare(`INSERT INTO tasks (title, dueDate, projectId, assignedTo, status) VALUES (?, ?, ?, ?, 'Pending')`)
-            .run(title, dueDate, projectId, assignedTo);
-        res.status(201).json({ id: result.lastInsertRowid, title, dueDate, projectId, assignedTo, status: 'Pending' });
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    db.run(`INSERT INTO tasks (title, dueDate, projectId, assignedTo, status) VALUES (?, ?, ?, ?, 'Pending')`,
+        [title, dueDate, projectId, assignedTo],
+        function(err) {
+            if (err) return res.status(500).json({ message: 'Database error.' });
+            res.status(201).json({ id: this.lastID, title, dueDate, projectId, assignedTo, status: 'Pending' });
+        }
+    );
 });
 
 // Get Tasks: GET /api/tasks
 app.get('/api/tasks', authenticate, (req, res) => {
-    try {
-        const rows = db.prepare(`SELECT * FROM tasks`).all();
+    db.all(`SELECT * FROM tasks`, [], (err, rows) => {
+        if (err) return res.status(500).json({ message: 'Database error.' });
         res.json(rows);
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // Update Task Status: PATCH /api/tasks/:id
@@ -203,13 +199,11 @@ app.patch('/api/tasks/:id', authenticate, (req, res) => {
         return res.status(400).json({ message: 'Invalid status.' });
     }
 
-    try {
-        const result = db.prepare(`UPDATE tasks SET status = ? WHERE id = ?`).run(status, id);
-        if (result.changes === 0) return res.status(404).json({ message: 'Task not found.' });
+    db.run(`UPDATE tasks SET status = ? WHERE id = ?`, [status, id], function(err) {
+        if (err) return res.status(500).json({ message: 'Database error.' });
+        if (this.changes === 0) return res.status(404).json({ message: 'Task not found.' });
         res.json({ message: 'Task updated', id, status });
-    } catch (err) {
-        res.status(500).json({ message: 'Database error.' });
-    }
+    });
 });
 
 // Catch-all to serve index.html for frontend routing
