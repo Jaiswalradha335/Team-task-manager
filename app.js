@@ -308,8 +308,8 @@ function renderProjectsPage() {
         card.onclick = () => openProjectDetails(project.id);
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-                <h3 style="font-size: 1.125rem;">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
-                <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-pending'}">${isProjectCompleted ? 'Done' : progress + '%'}</span>
+                <h3 style="font-size: 1.125rem; font-weight: 700;">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
+                <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-pending'}">${isProjectCompleted ? '100%' : progress + '%'}</span>
             </div>
             <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; min-height: 3em;">${project.description || 'No description provided.'}</p>
             <div style="margin-bottom: 1.5rem;">
@@ -333,8 +333,26 @@ window.openProjectDetails = function(projectId) {
     const project = allProjects.find(p => p.id == projectId);
     if (!project) return;
 
-    document.getElementById('detail-project-name').textContent = project.name;
-    document.getElementById('detail-project-desc').textContent = project.description || 'No description provided.';
+    const pTasks = allTasks.filter(t => t.projectId == projectId);
+    const completed = pTasks.filter(t => t.status === 'Completed').length;
+    const progress = pTasks.length > 0 ? Math.round((completed / pTasks.length) * 100) : 0;
+    const isProjectCompleted = project.status === 'Completed';
+
+    const detailName = document.getElementById('detail-project-name');
+    detailName.innerHTML = `${project.name} ${isProjectCompleted ? '✅' : ''}`;
+    if (isProjectCompleted) detailName.style.color = 'var(--success)';
+    else detailName.style.color = 'var(--text-main)';
+
+    const descEl = document.getElementById('detail-project-desc');
+    descEl.innerHTML = `
+        <p style="margin-bottom: 1.5rem;">${project.description || 'No description provided.'}</p>
+        <div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 1rem;">
+            <div style="height: 100%; background: ${isProjectCompleted ? 'var(--success)' : 'var(--primary)'}; width: ${isProjectCompleted ? '100' : progress}%; transition: width 0.5s ease;"></div>
+        </div>
+        <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 700; margin-bottom: 2rem;">
+            ${isProjectCompleted ? '100% COMPLETE' : progress + '% PROGRESS'} (${completed}/${pTasks.length} Tasks)
+        </p>
+    `;
     
     // Render Members
     const membersDiv = document.getElementById('detail-project-members');
