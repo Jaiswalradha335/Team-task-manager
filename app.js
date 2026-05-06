@@ -297,20 +297,22 @@ function renderProjectsPage() {
         const pTasks = allTasks.filter(t => t.projectId == project.id);
         const completed = pTasks.filter(t => t.status === 'Completed').length;
         const progress = pTasks.length > 0 ? Math.round((completed / pTasks.length) * 100) : 0;
+        const isProjectCompleted = project.status === 'Completed';
 
         const card = document.createElement('div');
         card.className = 'card';
         card.style.cursor = 'pointer';
+        card.style.opacity = isProjectCompleted ? '0.8' : '1';
         card.onclick = () => openProjectDetails(project.id);
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-                <h3 style="font-size: 1.125rem;">${project.name}</h3>
-                <span class="badge badge-success">${progress}%</span>
+                <h3 style="font-size: 1.125rem;">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
+                <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-pending'}">${isProjectCompleted ? 'Done' : progress + '%'}</span>
             </div>
             <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; min-height: 3em;">${project.description || 'No description provided.'}</p>
             <div style="margin-bottom: 1.5rem;">
                 <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
-                    <div style="height: 100%; background: var(--primary); width: ${progress}%;"></div>
+                    <div style="height: 100%; background: ${isProjectCompleted ? 'var(--success)' : 'var(--primary)'}; width: ${isProjectCompleted ? '100' : progress}%;"></div>
                 </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -348,6 +350,19 @@ window.openProjectDetails = function(projectId) {
     if (currentUser && currentUser.role === 'Admin') {
         adminSection.classList.remove('hidden');
         document.getElementById('btn-add-member').onclick = () => addMemberToProject(projectId);
+        
+        // Handle Complete Project Button
+        const completeBtn = document.getElementById('btn-complete-project');
+        if (project.status === 'Completed') {
+            completeBtn.textContent = 'Project is Completed';
+            completeBtn.disabled = true;
+            completeBtn.style.opacity = '0.6';
+        } else {
+            completeBtn.textContent = 'Mark Project as Completed';
+            completeBtn.disabled = false;
+            completeBtn.style.opacity = '1';
+            completeBtn.onclick = () => completeProject(projectId);
+        }
     } else {
         adminSection.classList.add('hidden');
     }
@@ -408,6 +423,30 @@ async function addMemberToProject(projectId) {
     }
 }
 
+async function completeProject(projectId) {
+    if (!confirm('Are you sure you want to mark this project and all its tasks as completed?')) return;
+
+    try {
+        const res = await fetch(`${API}/projects/${projectId}/complete`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (res.ok) {
+            showToast('Project completed successfully!', 'success');
+            closeModal('modal-project-details');
+            fetchData(); // This updates dashboard and projects list instantly
+        } else {
+            showToast('Failed to complete project', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
+}
+
 function renderTasksPage(filterStatus = null) {
     const columns = {
         'Pending': document.getElementById('page-tasks-pending'),
@@ -456,7 +495,22 @@ function renderTasksPage(filterStatus = null) {
 function renderTeamList(users) {
     const list = document.getElementById('page-team-list');
     list.innerHTML = '';
+    
+    const progressList = document.getElementById('member-progress-list');
+    if (progressList) progressList.innerHTML = '';
+
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const progressSection = document.getElementById('admin-progress-section');
+    if (progressSection) progressSection.classList.toggle('hidden', !isAdmin);
+
     users.forEach(user => {
+        // Calculate user performance
+        const userTasks = allTasks.filter(t => t.assignedTo === user.name);
+        const completed = userTasks.filter(t => t.status === 'Completed').length;
+        const total = userTasks.length;
+        const ratio = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        // Render standard card
         const card = document.createElement('div');
         card.className = 'card';
         card.style.textAlign = 'center';
@@ -467,6 +521,32 @@ function renderTeamList(users) {
             <span class="badge ${user.role === 'Admin' ? 'badge-success' : 'badge-pending'}" style="text-transform: capitalize;">${user.role}</span>
         `;
         list.appendChild(card);
+
+        // Render progress row for admin
+        if (isAdmin && progressList) {
+            const row = document.createElement('div');
+            row.className = 'card';
+            row.style.marginBottom = '1rem';
+            row.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <div style="display:flex; align-items:center; gap: 1rem;">
+                        <img src="https://i.pravatar.cc/150?u=${user.id}" style="width:40px; height:40px; border-radius:50%;">
+                        <div>
+                            <h5 style="margin:0;">${user.name}</h5>
+                            <p style="font-size:0.75rem; color: var(--text-muted); margin:0;">${user.role}</p>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight:700; color: var(--primary);">${ratio}% Success Rate</span>
+                        <p style="font-size:0.75rem; color: var(--text-muted); margin:0;">${completed}/${total} Tasks Completed</p>
+                    </div>
+                </div>
+                <div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; background: var(--success); width: ${ratio}%; transition: width 0.5s ease;"></div>
+                </div>
+            `;
+            progressList.appendChild(row);
+        }
     });
 }
 

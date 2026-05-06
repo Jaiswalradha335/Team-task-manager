@@ -34,7 +34,8 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             description TEXT,
-            members TEXT
+            members TEXT,
+            status TEXT DEFAULT 'Active'
         )`);
 
         db.run(`CREATE TABLE IF NOT EXISTS tasks (
@@ -149,9 +150,16 @@ app.patch('/api/projects/:id/complete', authenticate, (req, res) => {
         return res.status(403).json({ message: 'Access denied. Admins only.' });
     }
     const { id } = req.params;
-    db.run(`UPDATE tasks SET status = 'Completed' WHERE projectId = ?`, [id], function(err) {
+    
+    // Update project status
+    db.run(`UPDATE projects SET status = 'Completed' WHERE id = ?`, [id], function(err) {
         if (err) return res.status(500).json({ message: 'Database error.' });
-        res.json({ message: 'Project and all tasks marked as completed.' });
+        
+        // Mark all tasks of this project as completed
+        db.run(`UPDATE tasks SET status = 'Completed' WHERE projectId = ?`, [id], function(err) {
+            if (err) return res.status(500).json({ message: 'Database error.' });
+            res.json({ message: 'Project and all tasks marked as completed.' });
+        });
     });
 });
 

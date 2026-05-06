@@ -292,14 +292,23 @@
             </div>
 
             <!-- TEAM VIEW -->
-            <div id="view-team" class="dashboard-content hidden">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-                    <h2>Our Team</h2>
+            <section id="view-team" class="hidden">
+                <div id="admin-progress-section" class="hidden" style="margin-bottom: 3rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2 style="font-size: 1.5rem; font-weight: 800;">Member Performance</h2>
+                    </div>
+                    <div id="member-progress-list" class="grid" style="grid-template-columns: 1fr;">
+                        <!-- JS injected -->
+                    </div>
                 </div>
-                <div id="page-team-list" class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                    <!-- JS injected team members -->
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 800;">Team Members</h2>
                 </div>
-            </div>
+                <div id="page-team-list" class="grid">
+                    <!-- Cards will be injected by JS -->
+                </div>
+            </section>
 
             <!-- Placeholder views -->
             <div id="view-calendar" class="dashboard-content hidden">
@@ -395,10 +404,11 @@
 
                 <div id="admin-add-member-section" class="hidden">
                     <h4 style="font-size: 1rem; margin-bottom: 1rem;">Add Member</h4>
-                    <div style="display:flex; gap: 1rem;">
+                    <div style="display:flex; gap: 1rem; margin-bottom: 2rem;">
                         <select id="select-new-member" class="btn" style="flex:1; background: white; border: 1px solid var(--border); color: var(--text-main);"></select>
                         <button class="btn btn-primary" id="btn-add-member" style="padding: 0.5rem 1rem;">Add</button>
                     </div>
+                    <button class="btn btn-primary" id="btn-complete-project" style="width:100%; background: var(--success); margin-bottom: 2rem;">Mark Project as Completed</button>
                 </div>
             </div>
             
