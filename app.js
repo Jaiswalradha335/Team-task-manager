@@ -304,25 +304,25 @@ function renderProjectsPage() {
         const card = document.createElement('div');
         card.className = 'card';
         card.style.cursor = 'pointer';
-        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = isProjectCompleted ? '0.8' : '1';
         card.onclick = () => openProjectDetails(project.id);
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-                <h3 style="font-size: 1.125rem; font-weight: 700; color: ${isProjectCompleted ? 'var(--success)' : 'var(--text-main)'}">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
-                <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-primary'}">${isProjectCompleted ? 'Done' : progress + '%'}</span>
+                <h3 style="font-size: 1.125rem;">${project.name} ${isProjectCompleted ? '✅' : ''}</h3>
+                <span class="badge ${isProjectCompleted ? 'badge-success' : 'badge-pending'}">${isProjectCompleted ? 'Done' : progress + '%'}</span>
             </div>
             <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; min-height: 3em;">${project.description || 'No description provided.'}</p>
             <div style="margin-bottom: 1.5rem;">
-                <div class="progress-container">
-                    <div class="progress-bar ${isProjectCompleted ? 'success' : 'vibrant'}" style="width: ${isProjectCompleted ? '100' : progress}%;"></div>
+                <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; background: ${isProjectCompleted ? 'var(--success)' : 'var(--primary)'}; width: ${isProjectCompleted ? '100' : progress}%;"></div>
                 </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="avatar-group" style="display:flex;">
-                    <img src="https://i.pravatar.cc/150?u=${project.id}1" class="avatar" style="width:32px; height:32px; border: 2px solid white;">
-                    <img src="https://i.pravatar.cc/150?u=${project.id}2" class="avatar" style="width:32px; height:32px; border: 2px solid white; margin-left:-8px;">
+                    <img src="https://i.pravatar.cc/150?u=${project.id}1" style="width:32px; height:32px; border-radius:50%; border:2px solid white;">
+                    <img src="https://i.pravatar.cc/150?u=${project.id}2" style="width:32px; height:32px; border-radius:50%; border:2px solid white; margin-left:-8px;">
                 </div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">${completed}/${pTasks.length} Tasks Completed</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">${completed}/${pTasks.length} Tasks</p>
             </div>
         `;
         list.appendChild(card);
@@ -336,28 +336,6 @@ window.openProjectDetails = function(projectId) {
     document.getElementById('detail-project-name').textContent = project.name;
     document.getElementById('detail-project-desc').textContent = project.description || 'No description provided.';
     
-    // Progress fill logic
-    const pTasks = allTasks.filter(t => t.projectId == projectId);
-    const completed = pTasks.filter(t => t.status === 'Completed').length;
-    const progress = pTasks.length > 0 ? Math.round((completed / pTasks.length) * 100) : 0;
-    const isProjectCompleted = project.status === 'Completed';
-
-    const detailName = document.getElementById('detail-project-name');
-    detailName.style.color = isProjectCompleted ? 'var(--success)' : 'var(--text-main)';
-    detailName.innerHTML = `${project.name} ${isProjectCompleted ? '✅' : ''}`;
-
-    // Inject progress bar into description if not already there or handle via div
-    const descEl = document.getElementById('detail-project-desc');
-    descEl.innerHTML = `
-        <p style="margin-bottom: 1.5rem;">${project.description || 'No description provided.'}</p>
-        <div class="progress-container" style="margin-bottom: 2rem;">
-            <div class="progress-bar ${isProjectCompleted ? 'success' : 'vibrant'}" style="width: ${isProjectCompleted ? '100' : progress}%;"></div>
-        </div>
-        <p style="font-size: 0.875rem; font-weight: 700; color: var(--text-muted); margin-bottom: 2rem;">
-            ${isProjectCompleted ? 'PROJECT COMPLETED' : progress + '% COMPLETE'} (${completed}/${pTasks.length} Tasks)
-        </p>
-    `;
-
     // Render Members
     const membersDiv = document.getElementById('detail-project-members');
     membersDiv.innerHTML = '';
